@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>MJ - Ultra Super Very Very HEE HEE Edition</title>
+
+    <style>
+        body { background-color: #1a1a1a; color: #ffffff; font-family: 'Arial Black', Gadget, sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; margin: 0; overflow: hidden; transition: background 0.1s; }
+        h1 { color: #000000; text-shadow: 0 0 10px #ffffff; font-size: 3rem; margin-bottom: 5px; }
+        #player-tag { font-size: 0.9rem; color: #ffffff; margin-bottom: 30px; margin-top: 10px; text-shadow: 0 0 5px #ffffff; display: inline-block; border: 2px solid #000000; border-radius: 10px; padding: 5px 15px; box-shadow: 0 0 8px #ffffff; }
+        #score-container { font-size: 1.3rem; font-weight: bold; background-color: rgba(0, 0, 0, 0.5); padding: 15px 30px; border-radius: 20px; margin-bottom: 20px; margin-top: 30px; box-shadow: 0 0 15px rgba(255, 255, 255, 0.3); display: inline-block; }
+        #score { font-size: 1.5rem; color: #000000; text-shadow: 0 0 10px #ffffff; }
+        #click-img { width: 230px; height: 250px; cursor: pointer; border-radius: 50%; box-shadow: 0 0 20px rgba(255, 255, 255, 0.5); transition: transform 0.05s; }
+        .shake { animation: shake 0.2s infinite; }
+        @keyframes shake { 0% { transform: translate(1px, 1px) rotate(0deg); } 10% { transform: translate(-1px, -2px) rotate(-1deg); } 20% { transform: translate(-3px, 0px) rotate(1deg); } 30% { transform: translate(3px, 2px) rotate(0deg); } }
+        #leaderboard-box { margin-top: 25px; background: rgba(0, 0, 0, 0.7); border: 2px solid #fdfdfd; border-radius: 15px; padding: 15px 25px; width: 280px; box-shadow: 0 0 15px rgba(255, 255, 255, 0.2); }
+        #leaderboard-box h3 { margin: 0 0 10px 0; text-align: center; color: #ffffff; font-size: 1.2rem;}
+        #leaderboard-list { list-style: none; padding: 0; margin: 0; font-family: 'Courier New', Courier, monospace; font-size: 1rem; }
+        #leaderboard-list li { display: flex; justify-content: space-between; margin-bottom: 5px; border-bottom: 1px dashed rgba(255,255,255,0.2); padding-bottom: 3px; }
+        #reset-btn { margin-top: 26px; background: #333; color: #888; border: none; padding: 5px 10px; border-radius: 5px; cursor: pointer; font-size: 0.8rem; }
+        #reset-btn:hover { color: #000000; background: #ffffff; }
+        #click-img {-webkit-tap-highlight-color: transparent; user-select: none;}
+    </style>
+</head>
+
+<body>
+    <h1>HEE HEE V2</h1>
+    <div id="player-tag">Name: <span id="player-name">...</span></div>
+    
+    <img id="click-img" src="mj.jpg" alt="Click Me">
+    <div id="score-container"><span id="score">0</span></div>
+    <audio id="click-sound" src="heeheeeee.mp3"></audio>
+
+    <div id="leaderboard-box">
+        <h3> TOP 5 </h3>
+        <ol id="leaderboard-list"></ol>
+    </div>
+
+    <button id="reset-btn" onclick="clearUserData()">เปลี่ยนID</button>
+
+    <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+    import { getDatabase, ref, onValue, runTransaction, get } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+
+    const firebaseConfig = {
+        apiKey: "AIzaSyAu3KnoufS2jsr07W828GX_5oLXDpkAkgo",
+        authDomain: "pozpx-de40d.firebaseapp.com",
+        projectId: "pozpx-de40d",
+        storageBucket: "pozpx-de40d.firebasestorage.app",
+        messagingSenderId: "693701733467",
+        appId: "1:693701733467:web:b81ce7193835ce3a5a237e"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app, "https://pozpx-de40d-default-rtdb.firebaseio.com/");
+
+    let playerName = localStorage.getItem('currentPlayer');
+    
+    while (!playerName || playerName.trim() === "") {
+        playerName = prompt("ใส่ชื่อมาครับไอ่หนีห้า:");
+        if (playerName) localStorage.setItem('currentPlayer', playerName.trim());
+    }
+    document.getElementById('player-name').innerText = playerName;
+
+    // 💡 จุดที่ 1: ดึงแต้มของเกม MJ 
+    get(ref(db, 'mj_scores/' + playerName)).then((snapshot) => {
+        if (snapshot.exists()) {
+            document.getElementById('score').innerText = snapshot.val().score;
+        } else {
+            document.getElementById('score').innerText = 0;
+        }
+    });
+
+    // 💡 จุดที่ 2: โหลดตาราง Leaderboard ของเกม MJ
+    onValue(ref(db, 'mj_scores'), (snapshot) => {
+        const data = snapshot.val();
+        if(data) {
+            let list = Object.values(data);
+            list.sort((a,b) => b.score - a.score);
+            updateLeaderboardDisplay(list);
+            document.getElementById('db-status').innerText = "ควยยยยยยยยย";
+        }
+    });
+
+    document.getElementById('click-img').addEventListener('click', () => {
+        let currentScore = parseInt(document.getElementById('score').innerText) + 1;
+        document.getElementById('score').innerText = currentScore;
+        
+        // 💡 จุดที่ 3: บันทึกแต้มลงห้องเกม MJ
+        runTransaction(ref(db, 'mj_scores/' + playerName), (data) => {
+            if (data) {
+                data.score++;
+                return data;
+            }
+            return { name: playerName, score: 1 };
+        });
+        
+        const newSound = new Audio(document.getElementById('click-sound').src);
+        newSound.play();
+        document.getElementById('click-img').classList.add('shake');
+        setTimeout(() => document.getElementById('click-img').classList.remove('shake'), 100);
+    });
+
+    function updateLeaderboardDisplay(data) {
+        const listContainer = document.getElementById('leaderboard-list');
+        listContainer.innerHTML = "";
+        data.slice(0, 5).forEach((item, index) => {
+            listContainer.innerHTML += `<li><span>${index + 1}. ${item.name}</span><span>${item.score} HEEEEE</span></li>`;
+        });
+    }
+
+    window.clearUserData = () => {
+        localStorage.removeItem('currentPlayer');
+        location.reload();
+    };
+</script>
+</body>
+</html>
